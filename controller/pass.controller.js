@@ -2,6 +2,50 @@ import Password from "../models/password.js";
 import User from "../models/user.js";
 import UserData from "../models/userData.js";
 
+export const update = async (req, res) => {
+    const { title, password, username } = req.body;
+    try {
+        // Finding User
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(400).json({ message: "User Not Found!" });
+        }
+
+        // Finding UserData
+        const userData = await UserData.findOne({ user: user._id });
+        if (userData) {
+            // Finding Password
+            const passArray = userData.passwords;
+
+            for (let i = 0; i < passArray.length; i++) {
+                const passData = await Password.findById(passArray[i]);
+                try {
+                    if (passData.title === title) {
+                        // Update Password
+                        await Password.findByIdAndUpdate(passArray[i], {
+                            password,
+                        });
+                        return res
+                            .status(200)
+                            .json({ message: "Password Updated successfully" });
+                    }
+                } catch {
+                    return res.status(400).json({
+                        message: "Error Occurred While Updating Password.",
+                    });
+                }
+            }
+            return res
+                .status(400)
+                .json({ message: "Password not found for the given title" });
+        }
+    } catch {
+        return res
+            .status(400)
+            .json({ message: "Error Occurred While Updating Password." });
+    }
+};
+
 export const add = async (req, res) => {
     const { title, password, username } = req.body;
 
@@ -11,14 +55,35 @@ export const add = async (req, res) => {
             return res.status(400).json({ message: "User Not Found!" });
         }
 
+        const userData = await UserData.findOne({ user: user._id });
+        if (userData) {
+            // Finding Password
+            const passArray = userData.passwords;
+
+            for (let i = 0; i < passArray.length; i++) {
+                const passData = await Password.findById(passArray[i]);
+
+                if (passData.title === title) {
+                    return res.status(400).json({
+                        message: "Password Already Exist",
+                    });
+                }
+            }
+        }
+
         const newPassword = new Password({
             title,
             password,
         });
 
-        await newPassword.save();
+        try {
+            await newPassword.save();
+        } catch {
+            return res
+                .status(400)
+                .json({ message: "Error Occurred While Adding NEW Password." });
+        }
 
-        const userData = await UserData.findOne({ user: user._id });
         if (userData) {
             await UserData.findByIdAndUpdate(userData._id, {
                 $push: { passwords: newPassword._id },
@@ -73,10 +138,9 @@ export const del = async (req, res) => {
 };
 
 export const show = async (req, res) => {
+    //username
+    const { username } = req.body;
     try {
-        //username
-        const { username } = req.body;
-
         // Username se Id
         const user = await User.findOne({ username });
         const userId = user._id;

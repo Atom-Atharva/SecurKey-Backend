@@ -2,6 +2,7 @@ import express from "express";
 import { connectDB } from "./config/dbconnect.js";
 import authRoutes from "./routes/auth.js";
 import vaultRoutes from "./routes/vault.js";
+import cors from "cors";
 
 // Config for env file
 import dotenv from "dotenv";
@@ -9,6 +10,17 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT;
+
+// Allow requests from all origins
+app.use(cors());
+
+// Allow specific headers in CORS preflight response
+app.options(
+    "*",
+    cors({
+        allowedHeaders: ["Content-Type"],
+    })
+);
 
 // Connection with DB
 connectDB();

@@ -4,7 +4,6 @@ const passwordSchema = mongoose.Schema({
     title: {
         type: String,
         required: true,
-        unique: true,
     },
     password: {
         type: String,
